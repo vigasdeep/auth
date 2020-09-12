@@ -12,19 +12,36 @@ func Handlers() *mux.Router {
 
 	r := mux.NewRouter().StrictSlash(true)
 	r.Use(CommonMiddleware)
-
+	r.Methods("OPTIONS").HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
 	r.HandleFunc("/", controllers.TestAPI).Methods("GET")
 	r.HandleFunc("/api", controllers.TestAPI).Methods("GET")
+	r.HandleFunc("/register", controllers.CreateUser).Methods("OPTIONS")
+
 	r.HandleFunc("/register", controllers.CreateUser).Methods("POST")
+	r.HandleFunc("/login", controllers.Login).Methods("OPTIONS")
+
 	r.HandleFunc("/login", controllers.Login).Methods("POST")
 
 	// Auth route
 	s := r.PathPrefix("/auth").Subrouter()
 	s.Use(auth.JwtVerify)
+	// s.HandleFunc("/user", controllers.FetchUsers).Methods("OPTIONS")
+
 	s.HandleFunc("/user", controllers.FetchUsers).Methods("GET")
+	s.HandleFunc("/request_subdomain", controllers.RequestSubdomain).Methods("POST")
+	s.HandleFunc("/subdomains", controllers.FetchSubdomains).Methods("GET")
+	s.HandleFunc("/subdomain/{id}", controllers.DeleteSubdomain).Methods("DELETE")
+
 	s.HandleFunc("/user/{id}", controllers.GetUser).Methods("GET")
 	s.HandleFunc("/user/{id}", controllers.UpdateUser).Methods("PUT")
 	s.HandleFunc("/user/{id}", controllers.DeleteUser).Methods("DELETE")
+
+	a := r.PathPrefix("/admin").Subrouter()
+	a.Use(auth.JwtVerifyAdmin)
+	a.HandleFunc("/approve_subdomain", controllers.RequestSubdomain).Methods("POST")
 	return r
 }
 
